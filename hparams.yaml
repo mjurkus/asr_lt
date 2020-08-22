@@ -1,0 +1,19 @@
+epochs: 50
+fast_dev_run: False
+train_manifest: 'manifests/train_manifest.csv'
+val_manifest: 'manifests/val_manifest.csv'
+batch_size: 20  # Batch size for training
+num_workers: 8  # Number of workers used in data-loading
+labels_path: 'labels.json'  # Contains tokens for model output
+n_cnn_layers: 3
+n_rnn_layers: 5
+rnn_dim: 512
+n_class: 38
+n_feats: 128
+stride: 2
+dropout: 0.3
+learning_rate: 5e-4
+checkpoint:
+  enabled: False # is checkpoint load enabled
+  checkpoint: '' # specific checkpoint
+  checkpoint_path: 'models' # where checkpoints should be stored
