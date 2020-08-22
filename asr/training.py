@@ -74,7 +74,7 @@ def train(params):
 
     decoder = GreedyDecoder(labels)  # Decoder used for validation
 
-    hparams['num_classes'] = len(labels)
+    hparams['n_class'] = len(labels)
 
     if not hparams['checkpoint']['enabled']:
         model = AsrModel(
