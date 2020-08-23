@@ -1,3 +1,4 @@
+import logging
 from collections import OrderedDict
 
 import pytorch_lightning as pl
@@ -5,6 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
+
+logger = logging.getLogger(__name__)
 
 
 class CNNLayerNorm(nn.Module):
@@ -151,23 +154,37 @@ class AsrModel(pl.LightningModule):
 
         val_loss = self.criterion(output, labels, input_lengths, label_lengths)
 
-        val_cer, val_wer = [], []
-
+        total_cer, total_wer, num_tokens, num_chars = 0, 0, 0, 0
         decoded_preds, _ = self.decoder.decode(output.transpose(0, 1))
         decoded_targets = self.decoder.convert_to_strings(labels)
-        for j in range(len(decoded_preds)):
-            dt = "".join(decoded_targets[j])
-            dp = "".join(decoded_preds[j])
-            val_cer.append(self.decoder.cer(dt, dp))
-            val_wer.append(self.decoder.wer(dt, dp))
 
-        avg_cer = sum(val_cer) / len(val_cer)
-        avg_wer = sum(val_wer) / len(val_wer)
+        verbose_counter = 0
+        for j in range(len(decoded_preds)):
+            reference = "".join(decoded_targets[j])
+            transcript = "".join(decoded_preds[j])
+
+            cer_inst = self.decoder.cer(transcript, reference)
+            wer_inst = self.decoder.wer(transcript, reference)
+
+            total_wer += wer_inst
+            total_cer += cer_inst
+            num_tokens += len(reference.split())
+            num_chars += len(reference.replace(' ', ''))
+
+            if self.hparams['verbose'] and verbose_counter < 20:
+                verbose_counter += 1
+                logger.info(f"Ref: {reference.lower()}")
+                logger.info(f"Hyp: {transcript.lower()}")
+                logger.info(f"WER: {float(wer_inst) / len(reference.split())}")
+                logger.info(f"CER: {float(cer_inst) / len(reference.replace(' ', ''))}")
+
+        wer = float(total_wer) / num_tokens * 100
+        cer = float(total_cer) / num_chars * 100
 
         output = OrderedDict({
             'val_loss': val_loss,
-            "cer": avg_cer,
-            "wer": avg_wer,
+            "cer": cer,
+            "wer": wer,
         })
 
         return output

@@ -74,8 +74,6 @@ def gather_file_durations(file_paths):
     Returns: List of Tuple[path, duration]
     """
 
-    file_paths = file_paths[:100]
-
     print("Collecting audio file durations...")
     duration_file_paths = []
     for path in tqdm(file_paths, total=len(file_paths)):

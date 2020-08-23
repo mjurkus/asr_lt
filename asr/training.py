@@ -67,7 +67,7 @@ def train(params):
 
     hparams: dict = {**hparams, **vars(params)}
 
-    logger.debug(json.dumps(hparams, sort_keys=True, indent=2))
+    logger.info(json.dumps(hparams, sort_keys=True, indent=2))
 
     with open(to_absolute_path(hparams['labels_path'])) as label_file:
         labels = json.load(label_file)
@@ -117,27 +117,25 @@ def train(params):
         shuffle=False,
     )
 
-    comet_ml_api_key = os.environ.get('COMET_API_KEY', None)
     comet_ml_experiment_key = os.environ.get('COMET_EXPERIMENT_KEY', None)
     comet_logger = CometLogger(
-        save_dir="comet",
-        # api_key="" if comet_ml_api_key is None else comet_ml_api_key,
-        project_name='deep-lt',
+        save_dir='comet',
+        project_name='asr-lt',
         workspace='mjurkus',
-        disabled=comet_ml_api_key is None,
+        offline=params.comet_offline,
         experiment_key=None if not comet_ml_experiment_key else comet_ml_experiment_key,
     )
 
     callbacks = [
-        LearningRateLogger(),
+        LearningRateLogger(logging_interval='step'),
     ]
 
     model_checkpoint_callback = ModelCheckpoint(
-        filepath='models/epoch_{epoch}-{val_loss:.2f}-{wer:.2f}-{cer:.2f}',
+        filepath='models/epoch_{epoch}-{val_loss:.5f}-{wer:.2f}-{cer:.2f}',
         save_weights_only=True,
-        save_top_k=True,
+        save_top_k=2,
         mode='min',
-        monitor='wer',
+        monitor='val_loss',
         verbose=True
     )
 
@@ -168,5 +166,6 @@ def to_absolute_path(path: str) -> str:
 
 def add_trainer_args(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument("--fast_dev_run", action='store_true')
+    parser.add_argument("--comet_offline", action='store_true')
 
     return parser
